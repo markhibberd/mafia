@@ -6,6 +6,49 @@ mafia
 
 ![mafia](img/mafia.jpg)
 
+Fork Notes
+----------
+
+This is a fork of haskell-mafia/mafia. It isn't intended to stay in
+sync, the point of an opinionated wrapper is that you like the
+opinions, and these are mine.
+
+A Note On Cabal vs Stack vs Mafia
+---------------------------------
+
+Mafia isn't intended as another haskell build tool (it isn't even one,
+it uses Cabal/cabal-install for building, and it would be a huge
+stretch to have a stack port so it can use stack or cabal for
+building).
+
+Mafia is a set of conventions around haskell projects that make it
+easier to develop against rigid workflows appropriate for building
+production code (and not having that workflow or code bitrot). If you
+try to use it for _arbitrary haskell project_ you won't have much
+fun. If someone suggests that you use mafia over stack or cabal they
+aren't even making a coherent statement.
+
+The conventions allows: submodules for inline development of
+dependencies (very useful in organisations where you have a number of
+repositories, or you want to patch an upstream dependency and need to
+incorporate it before it is released); More flexible usage of ghci,
+cabal/stack repl's don't allow anything close to the same workflow,
+this means that I can reload files across dependencies and multi
+module projects with ease, but it requires disciplined practices to
+ensure that all haskell modules are complete and don't need
+information from cabal to build (extension flags etc...); allows
+external caching of dependencies and sharing of dependencies across
+sandboxes, this is less important out of rigid CI infrastructure where
+you can take advantage of it, but it can help, cabal new-build could
+potentially help with this but at the time of writing mafia's is a bit
+more battle tested and doesn't break as much (or at all for my
+situations), ultimately it would be nice to remove this from mafia if
+cabal's can reach parity.
+
+The point is that, mafia is a wrapper around a way of developing
+haskell, if you want to develop in the same way it is a useful tool,
+if you don't it isn't and it will get in your way. I don't want to see
+anyone claim anything more or less.
 
 Overview
 --------
