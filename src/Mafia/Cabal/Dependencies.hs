@@ -44,6 +44,7 @@ import           Mafia.Path
 import           Mafia.Process
 
 import           System.IO (IO)
+import qualified System.Environment as Environment
 
 ------------------------------------------------------------------------
 
@@ -183,11 +184,15 @@ makeInstallPlan mdir sourcePkgs installArgs = do
     -- this is a fast 'cabal sandbox add-source'
     createIndexFile sourcePkgs tmp
 
+    -- MTH: This is a Hacky McHackHask special hack, need to wire into CLI.
+    backjumps <- fmap T.pack . fmap (fromMaybe "-1") . liftIO $
+      Environment.lookupEnv "MAFIA_MAX_BACKJUMPS"
+
     let
       installDryRun args =
         cabal "install" $
           [ "--reorder-goals"
-          , "--max-backjumps=-1"
+          , "--max-backjumps=" <> backjumps
           , "--avoid-reinstalls"
           , "--dry-run" ] <> installArgs <> args
 
