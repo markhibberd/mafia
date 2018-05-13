@@ -17,7 +17,7 @@ A Note On Cabal vs Stack vs Mafia
 ---------------------------------
 
 Mafia isn't intended as another haskell build tool (it isn't even one,
-it uses Cabal/cabal-install for building, and it would be a huge
+it uses Cabal/cabal-install for building, and it would not be a huge
 stretch to have a stack port so it can use stack or cabal for
 building).
 
