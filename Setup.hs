@@ -74,7 +74,6 @@ genBuildInfo verbosity pkg = do
       targetText = "gen/version.txt"
   t <- timestamp verbosity
   gv <- gitVersion verbosity
-  cv <- cabalVersion verbosity
   let v = showVersion version
   let buildVersion = intercalate "-" [v, t, gv]
   rewriteFile targetHs $ unlines [
@@ -85,8 +84,6 @@ genBuildInfo verbosity pkg = do
     , "buildInfo = RuntimeBuildInfo \"" ++ v ++ "\" \"" ++ t ++ "\" \"" ++ gv ++ "\""
     , "buildInfoVersion :: String"
     , "buildInfoVersion = \"" ++ buildVersion ++ "\""
-    , "cabalVersion :: String"
-    , "cabalVersion = \"" ++ cv ++ "\""
     ]
   rewriteFile targetText buildVersion
 
@@ -113,9 +110,6 @@ genDependencyInfo verbosity pkg info = do
     , "dependencyInfo :: [String]"
     , "dependencyInfo = [\n    " ++ intercalate "\n  , " strs ++ "\n  ]"
     ]
-
-cabalVersion :: Verbosity -> IO String
-cabalVersion verbosity = fmap (head . lines) $ rawSystemStdout verbosity "cabal" ["--numeric-version"]
 
 gitVersion :: Verbosity -> IO String
 gitVersion verbosity = do

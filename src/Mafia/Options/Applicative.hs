@@ -23,10 +23,13 @@ import qualified Data.Attoparsec.Text as A
 import           Data.String (String)
 import qualified Data.Text as T
 
+import           Distribution.Version (Version, versionNumbers)
+
 import           Options.Applicative as X
 import           Options.Applicative.Types as X
 
 import           Mafia.P
+import           Mafia.Cabal.Version
 
 import           System.Exit (exitSuccess, ExitCode(..), exitWith)
 import           System.IO (IO, putStrLn, print, hPutStrLn, stderr)
@@ -41,6 +44,9 @@ data SafeCommand a =
   | DependencyCommand
   | RunCommand RunType a
   deriving (Eq, Show)
+
+showVersion :: Version -> String
+showVersion = intercalate "." . fmap show . versionNumbers
 
 -- | Turn a parser into a ReadM
 eitherTextReader :: (e -> Text) -> (Text -> Either e a) -> ReadM a
@@ -70,17 +76,22 @@ dispatch p = customExecParser (prefs showHelpOnEmpty) (info (p <**> helper) idm)
 --
 --   Example usage:
 --
--- > cli "my-cli" buildInfoVersion cabalVersion dependencyInfo myThingParser $ \c ->
+-- > cli "my-cli" buildInfoVersion dependencyInfo myThingParser $ \c ->
 -- >  case c of
 -- >      DoThingA -> ...
 -- >      DoThingB -> ...
-cli :: Show a => [Char] -> [Char] -> [Char] -> [[Char]] -> Parser a -> (a -> IO b) -> IO b
-cli name v cv deps commandParser act = do
+cli :: Show a => [Char] -> [Char] -> [[Char]] -> Parser a -> (a -> IO b) -> IO b
+cli name v deps commandParser act = do
   dispatch (safeCommand commandParser) >>= \a ->
     case a of
       VersionCommand -> do
         putStrLn (name <> ": " <> v)
-        putStrLn ("built with cabal version: " <> cv) >> exitSuccess
+        eitherCV <- runEitherT getCabalVersion
+        case eitherCV of
+          Right cv ->
+            putStrLn ("built with cabal version: " <> showVersion cv ) >> exitSuccess
+          Left _ ->
+            putStrLn "Unable to retrieve cabal version" >> exitSuccess
       DependencyCommand ->
         mapM putStrLn deps >> exitSuccess
       RunCommand DryRun c ->
