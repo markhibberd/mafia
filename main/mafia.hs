@@ -83,6 +83,7 @@ data MafiaCommand =
   | MafiaDepends DependsUI (Maybe PackageName) [Flag]
   | MafiaClean
   | MafiaBuild Profiling Warnings CoreDump AsmDump [Flag] [Argument]
+  | MafiaNewBuild Profiling Warnings CoreDump AsmDump [Flag] [Argument]
   | MafiaTest [Flag] [Argument]
   | MafiaTestCI [Flag] [Argument]
   | MafiaRepl [Flag] [Argument]
@@ -138,6 +139,8 @@ run = \case
     mafiaClean
   MafiaBuild p w dumpc dumpa flags args ->
     mafiaBuild p w dumpc dumpa flags args
+  MafiaNewBuild p w dumpc dumpa flags args ->
+    mafiaNewBuild p w dumpc dumpa flags args
   MafiaTest flags args ->
     mafiaTest flags args
   MafiaTestCI flags args ->
@@ -198,8 +201,11 @@ commands =
  , command' "clean" "Clean up after build. Removes the sandbox and the dist directory."
             (pure MafiaClean)
 
- , command' "build" "Build this package, including all executables and test suites."
+ , command' "old-build" "Build this package, including all executables and test suites."
             (MafiaBuild <$> pProfiling <*> pWarnings <*> pCoreDump <*> pAsmDump <*> many pFlag <*> many pCabalArgs)
+
+ , command' "build" "Build this package, including all executables and test suites."
+            (MafiaNewBuild <$> pProfiling <*> pWarnings <*> pCoreDump <*> pAsmDump <*> many pFlag <*> many pCabalArgs)
 
  , command' "test" "Test this package, by default this runs all test suites."
             (MafiaTest <$> many pFlag <*> many pCabalArgs)
@@ -526,6 +532,59 @@ mafiaBuild p w dumpc dumpa flags args = do
 
 
   liftCabal . cabal_ "build" $ ["-j"] <> wargs <> dumpargs <> platformargs <> args
+
+mafiaNewBuild :: Profiling -> Warnings -> CoreDump -> AsmDump -> [Flag] -> [Argument] -> EitherT MafiaError IO ()
+mafiaNewBuild _p w dumpc dumpa _flags args = do
+ --  initMafia LatestSources p flags
+
+  let
+    wargs =
+      case w of
+        DisableWarnings ->
+          ["--ghc-options=-w"]
+        EnableWarnings ->
+          ["--ghc-options=-Werror"]
+
+    dumpargs =
+      ordNub $ coredump <> asmdump
+
+    coredump =
+      case dumpc of
+        DisableCoreDump ->
+          []
+        EnableCoreDump -> fmap ("--ghc-options="<>)
+          ["-ddump-simpl"
+          ,"-ddump-to-file"
+          ,"-dppr-case-as-let"
+          ,"-dsuppress-uniques"
+          ,"-dsuppress-idinfo"
+          ,"-dsuppress-coercions"
+          ,"-dsuppress-type-applications"
+          ,"-dsuppress-module-prefixes"
+          ]
+
+    asmdump =
+      case dumpa of
+        DisableAsmDump ->
+          []
+        EnableAsmDump -> fmap ("--ghc-options="<>)
+          ["-ddump-asm"
+          ,"-ddump-to-file"
+          ]
+
+    platformargs =
+      case Info.os of
+        "darwin" -> [
+            "--ghc-options=-optl-Wl,-dead_strip_dylibs"
+          , "--ghc-options=-optc-Wno-unused-command-line-argument"
+          , "--ghc-options=-optl-Wno-unused-command-line-argument"
+          ]
+        _ -> [
+          ]
+
+
+  liftCabal . cabal_ "new-build" $ ["-j"] <> wargs <> dumpargs <> platformargs <> args
+
 
 mafiaTest :: [Flag] -> [Argument] -> EitherT MafiaError IO ()
 mafiaTest flags args = do
