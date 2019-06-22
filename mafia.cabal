@@ -120,7 +120,8 @@ executable mafia
 
   ghc-options:
                     -Wall
-
+                    -threaded
+                    -rtsopts
   hs-source-dirs:
                     gen
 
