@@ -15,7 +15,8 @@ testIO :: Testable a => IO a -> Property
 testIO = testPropertyIO . run
 
 testPropertyIO :: Testable a => PropertyM IO a -> Property
-testPropertyIO = monadicIO . (=<<) stop
+testPropertyIO prop =
+  monadicIO $ prop
 
 -- | Perform an action and return the CPU time it takes, in picoseconds
 -- (actual precision varies with implementation).
